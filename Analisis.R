@@ -30,11 +30,11 @@ pairs.panels(data[,c(2:11)], method="pearson",
              hist.col = "#1fbbfa", density=TRUE, ellipses=TRUE, show.points = TRUE,
              pch=1, lm=TRUE, cex.cor=1, smoother=F, stars = T, main="Cancer Mean")
 
-pairs.panels(data[,c(11:11)], method="pearson",
+pairs.panels(data[,c(12:21,1)], method="pearson",
              hist.col = "#1fbbfa", density=TRUE, ellipses=TRUE, show.points = TRUE,
              pch=1, lm=TRUE, cex.cor=1, smoother=F, stars = T, main="Cancer Mean")
 
-pairs.panels(data[,c(2:11)], method="pearson",
+pairs.panels(data[,c(22:31,1)], method="pearson",
              hist.col = "#1fbbfa", density=TRUE, ellipses=TRUE, show.points = TRUE,
              pch=1, lm=TRUE, cex.cor=1, smoother=F, stars = T, main="Cancer Mean")
 
