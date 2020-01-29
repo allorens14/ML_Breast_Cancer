@@ -152,8 +152,8 @@ ggcorr(data[,c(22:31)],label = TRUE, hjust = 0.82,size=3)
 #Ahora que sabemos que no todas las variables aportan valor y que pueden ser eliminadas de nuestro dataset vamos a
 #ver mediante el el método PCA de que forma podemos simplificar nuestros datos.
 
-#Este método nos permite conocer la importancia de las variables (proporcion de la varianza). Una proporción por
-#encima del 85% resultará suficiente para no necesitar más variables.
+#Este método nos permite conocer la importancia de las variables (proporcion de la varianza). Una proporción acumulada
+#por encima del 85% resultará suficiente para no necesitar más variables.
 
 #En este momento se analizara PCA, simplemente para ver que conclusiones se sacan, pero si se dedice utilizar PCA
 #finalmente, se aplicará al dataset mas adelante, cuando se vayan a entrenar los algoritmos.
@@ -185,11 +185,14 @@ ggplot(data=varianza_dataframe,aes(x=pc,y=varianza_acumulado, group = 1))+
   geom_point()+geom_line()+ geom_label(aes(label = round(varianza_acumulado,2))) 
 
 
+#Con este gráfico vemos cuales han sido las variables que más han contribuido a las dos componentes principales.
+fviz_pca_var(pca,col.var="contrib",gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),legend.title="Diagnosis")
+#Se aprecian ciertos clusters de variables, lo que sugiere multicorrelación, algo que ya conociamos.
 
 
-#Biplot con las dos componentes principales y con los dos grupos target. Se aprecian dos clusters claramente 
-#diferenciados
-fviz_pca_biplot(pca,col.ind = data$diagnosis, col="black",
+#Biplot con las dos componentes principales y con los dos grupos target. Se aprecian dos clusters de puntos 
+#claramente diferenciados
+fviz_pca_biplot(pca,col.ind = data$diagnosis,col.var="contrib",
                 palette = "jco", geom = "point", repel=TRUE,
                 legend.title="Diagnosis", addEllipses = TRUE)
 
@@ -208,25 +211,50 @@ ggpairs(pcas, columns = 2:7, ggplot2::aes(color = value,alpha=0.75))
 
 ###################################################--LDA--#######################################################
 
-#Linear Discriminant Analysis (LDA).Intenta, encontrar la combinacion linear de los predictores que maximiza la 
-#separación entre los centros de los datos y al mismo tiempo minimizar la variación entre cada grupo de datos.
-#Es otro método lineal que podria obtener mejores resultados que PCA.
+#Linear Discriminant Analysis (LDA).Método lineal supervisado.Intenta, encontrar la combinacion linear de los 
+#predictores que maximiza la separación entre los centros de los datos y al mismo tiempo minimizar la variación 
+#entre cada grupo de datos.Siempre obtiene K-1 variables donde K es el número de clases del target.
+#Podria obtener mejores resultados que PCA.
 
-#
+#Para realizar bien la comprobación de si LDA es un método adecuado para nuestro dataset hay que dividir los datos 
+#en train y test y aplicar LDA a train, para despues predecir sobre test y comprobar su eficacia. 
+
+#Fijamos la semilla para que los resultados sean repetibles
+set.seed(543)
+
+#Mezclo y divido el dataset
+index <- sample(1:NROW(data), 0.7 * NROW(data))   
+train <- data[index,]                   ## 398 test data (70%)
+test <- data[-index,]                   ## 171 test data (30%)
+prop.table(table(test$diagnosis))
+prop.table(table(train$diagnosis))
+
+#Aplico LDA sobre el conjunto total de los datos, simplemente para ver el número de variables que devuelve y otros
+#datos de interes
 library(MASS)
-lda <- lda(diagnosis ~., data = data, center = TRUE, scale = TRUE)
+lda <- lda(diagnosis ~., data = train)
 lda
+plot(lda)
 summary(lda)
-
 prop <- lda$svd^2/sum(lda$svd^2)
 prop
-
 
 #al ver las varianzas de cada una de las variables vemos que solo aparece 1 componente con un 100% de la varianza
 #esto significa que ha reducido nuestro número de variables a tan solo 1.
 
-#Creamos un dataframe con los datos y nuestra nueva componente.
-lda_df <- predict(lda, data)$x %>% as.data.frame() %>% cbind(diagnosis=data$diagnosis)
+
+#Aplico LDA sobre los dataset de train y test y realizo las predicciones para despues compararlas.
+lda_train <- lda(diagnosis ~., data = train)
+pred_train <- predict(lda_train,train)$class
+
+lda_test <- lda(diagnosis ~., data = test)
+pred_test <- predict(lda_test,test)$class
+
+#Calculo la precisión de las predicciones para obtener la precisión esperada y la precision observada.
+mean(pred_train == train$diagnosis)
+mean(pred_test == test$diagnosis)
+
+#La precision observada es de 98.83% por lo que podemos decir que LDA funciona con nuestro dataset.
 
 #Visualizamos resultados
 ggplot(lda_df, aes(x=LD1, y=0, col=diagnosis)) + geom_point(alpha=0.5)
