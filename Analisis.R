@@ -230,7 +230,8 @@ prop.table(table(test$diagnosis))
 prop.table(table(train$diagnosis))
 
 #Aplico LDA sobre el conjunto total de los datos, simplemente para ver el número de variables que devuelve y otros
-#datos de interes
+#datos de interes, asi como comprobar si al realizar la prediccion sobre LDA obtenemos resultados lo suficientemente
+#buenos como para poder que es buen método de clasificación para nuestros datos.
 library(MASS)
 lda <- lda(diagnosis ~., data = train)
 lda
@@ -241,6 +242,15 @@ prop
 
 #al ver las varianzas de cada una de las variables vemos que solo aparece 1 componente con un 100% de la varianza
 #esto significa que ha reducido nuestro número de variables a tan solo 1.
+
+#Visualizamos resultados
+prueba_lda <- predict(lda, test)$x %>% as.data.frame() %>% cbind(diagnosis=test$diagnosis)
+ggplot(prueba_lda, aes(x=LD1, y=0, col=diagnosis)) + geom_point(alpha=0.5)
+ggplot(prueba_lda, aes(x=LD1, fill=diagnosis)) + geom_density(alpha=0.5)
+
+
+#Podemos ver en el gráfico de puntos que nuestra única variable divide los datos de forma que podemos ver dos grandes
+#grupos diferenciados, los cuales se corresponden con los dos valores de nuestra variable target.
 
 
 #Aplico LDA sobre los dataset de train y test y realizo las predicciones para despues compararlas.
@@ -254,16 +264,7 @@ pred_test <- predict(lda_test,test)$class
 mean(pred_train == train$diagnosis)
 mean(pred_test == test$diagnosis)
 
-#La precision observada es de 98.83% por lo que podemos decir que LDA funciona con nuestro dataset.
-
-#Visualizamos resultados
-ggplot(lda_df, aes(x=LD1, y=0, col=diagnosis)) + geom_point(alpha=0.5)
-ggplot(lda_df, aes(x=LD1, fill=diagnosis)) + geom_density(alpha=0.5)
-
-
-#Podemos ver en el gráfico de puntos que nuestra única variable divide los datos de forma que podemos ver dos grandes
-#grupos diferenciados, los cuales se corresponden con los dos valores de nuestra variable target.
-
+#La precision observada es de 98.83% por lo que podemos decir que LDA es válido para nuestro dataset.
 
 
 ###################################################--t-SNE--#######################################################
@@ -292,3 +293,4 @@ ggplot(data = res, aes(x = dim_1, y = dim_2)) +
 
 #Al igual que utilizando LDA, en el gráfico podemos ver dos grupos de puntos diferenciados, que se asemejan a la 
 #division de nuestro campo target. Existe cierto solapamiento.
+

@@ -27,6 +27,16 @@ model_rf <- train(diagnosis~.,
 model_rf
 plot(model_rf)
 
+#Importancia de la variables
+plot(varImp(model_rf))
+
+#resultado de los K-Folds
+model_rf$resample
+
+#Compruebo la dispersión de los valores del ROC para mtry = 2, splitrule = extratrees and min.node.size = 1.
+#durante la validación (K-folds)
+hist(model_rf$resample$ROC)
+
 #Vemos que el máximo valor de ROC (99,2%) lo obtiene con los siguientes parametros:
 #mtry = 2 (numero de variables a elegir en cada division), 
 #splitrule = extratrees (metodo de division)
@@ -43,6 +53,11 @@ confusionMatrix(pred_rf, test$diagnosis, positive = "M")
 #Obtenemos una precisión de 97,08%, lo cual no esta nada mal. Cabe mencionar que se ha obtenido un 99% de Specificity 
 #y un 93.65% de Sensitivity. Posiblemente se querria al revés, aumentar la Sensitivity; ya que preferimos tener un
 #falso positivo que un falso negativo. El valor de Kappa es de 93%, lo cual es muy positivo.
+
+#Guardo el valor de la Accuracy de mi modelo en un data frame de resultados para luego poder comparar modelos
+confMRF <- confusionMatrix(pred_rf, test$diagnosis, positive = "M")
+Accuracy <- round(confMRF$overall[1]*100,3)
+res <- as.data.frame(Accuracy) %>% mutate(algoritmo='RandomForest') 
 
 
 ###################################################--PCA--####################################################
@@ -67,7 +82,7 @@ model_rf <- train(diagnosis~.,
                   train,
                   method="ranger",
                   metric="ROC",
-                  tuneLength=15,
+                  tuneLength=10,
                   #tuneGrid = Grid,
                   preProcess = c('center', 'scale','pca'),
                   trControl=fitControl)
@@ -76,11 +91,16 @@ plot(model_rf)
 pred_rf <- predict(model_rf, test)
 confusionMatrix(pred_rf, test$diagnosis, positive = "M")
 
-#Con un threshold de 0.99 o 0.95 el algoritmo no mejora en cuanto a precisión a utilizar PCA, mas concretamente,
+#Con un threshold de 0.99 o 0.95 el algoritmo no mejora en cuanto a precisión al utilizar PCA, mas concretamente,
 #al utilizarlo con ranger (rf da peores resultados) alcanza alrededor de 95. Es un 2% menos preciso
 
+confMRF2 <- confusionMatrix(pred_rf, test$diagnosis, positive = "M")
+Accuracy <- round(confMRF2$overall[1]*100,3)
+new <- data.frame(Accuracy) %>% mutate(algoritmo='RandomForest-PCA') 
+res <- rbind(res,new)
 
-###################################################--LDA-####################################################
+
+ ###################################################--LDA-####################################################
 
 #Voy a crear ahora el modelo sobre los datasets creados con lda aplicado.
 
@@ -106,11 +126,15 @@ model_rf_lda
 pred_rf <- predict(model_rf_lda, test_lda)
 confusionMatrix(pred_rf, test_lda$diagnosis, positive = "M")
 
-#La precision de este modelo es de 98.25% superior a las dos opciones vistas anteriormente (97% y 95% respectivamente)
-#El valor de Kappa es de 0.9635, siendo tambien el mayor de entre el resto de modelos.
-#Los valores de Sensitivity y Specificity son 0.9710 y 0.9902 igualando en Specificity al mejor y superando en
-#Sensitivity al mejor en un ~3%.
+#La precision de este modelo es de 95,91% similar a la opcion anterior
+#El valor de Kappa es de 0.9148, siendo tambien bueno.
+#Los valores de Sensitivity y Specificity son 0.9420 y 0.9706 superando en Sensitivity al primero pero peor en
+#Sensitivity en un ~2%.
 
-#Este último modelo es sin duda el mejor de los 3: RandomForest con LDA. Enhorabuena Alejandro! ;)
+#El mejor de los 3 parece ser el primero: RandomForest con ranger y todos los datos.
 
 
+confMRF3 <- confusionMatrix(pred_rf, test_lda$diagnosis, positive = "M")
+Accuracy <- round(confMRF3$overall[1]*100,3)
+new <- data.frame(Accuracy) %>% mutate(algoritmo='RandomForest-LDA') 
+res <- rbind(res,new)
